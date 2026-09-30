@@ -5,4 +5,4 @@ A production-style network automation and validation project built progressively
 ## Planned Validation Features
 
 - BGP pre-change validation
-- BGP neighbor-state validation
+- BGP neighbor-state validation before network deployment
