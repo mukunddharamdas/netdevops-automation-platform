@@ -183,4 +183,29 @@ def test_iosxe_oper_status_ready():
 
     assert result is True
     assert reason == "operational status is up"
+
+def test_iosxe_oper_status_not_ready():
+    xml_data = """
+    <rpc-reply xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+        <data>
+            <interfaces xmlns="http://cisco.com/ns/yang/Cisco-IOS-XE-interfaces-oper">
+                <interface>
+                    <name>GigabitEthernet2</name>
+                    <admin-status>if-state-up</admin-status>
+                    <oper-status>if-oper-state-no-pass</oper-status>
+                </interface>
+            </interfaces>
+        </data>
+    </rpc-reply>
+    """
+
+    root = parse_netconf_xml(xml_data)
+
+    result, reason = validate_iosxe_oper_status(
+        root,
+        "GigabitEthernet2"
+    )
+
+    assert result is False
+    assert reason == "operational status is if-oper-state-no-pass"
     
