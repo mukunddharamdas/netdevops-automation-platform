@@ -83,7 +83,7 @@ def retrieve_and_validate_interface(
         interface_name
     )
 
-def validate_iosxe_oper_status(root, interface_name):
+def validate_iosxe_oper_status(root, interface_name, expected_status):
     namespace = {
         "iosxe": (
             "http://cisco.com/ns/yang/"
@@ -121,18 +121,32 @@ def validate_iosxe_oper_status(root, interface_name):
                 )
 
             if status_element.text == "if-oper-state-ready":
-                return True, "operational status is up"
+                actual_status = "up"
+            elif status_element.text == "if-oper-state-no-pass":
+                actual_status = "down"
+            else:
+                raise ValueError(
+                    f"unrecognized IOS XE operational status: "
+                    f"{status_element.text}"
+                )
+
+            if actual_status == expected_status:
+                return True, (
+                    f"operational status is {actual_status}, "
+                    f"expected {expected_status}"
+                )
 
             return False, (
-                f"operational status is "
-                f"{status_element.text}"
+                f"operational status is {actual_status}, "
+                f"expected {expected_status}"
             )
 
     return False, f"interface {interface_name} not found"
 
 def retrieve_and_validate_iosxe_interface(
     connection,
-    interface_name
+    interface_name,
+    expected_status
 ):
     oper_filter = f"""
     <interfaces xmlns="http://cisco.com/ns/yang/Cisco-IOS-XE-interfaces-oper">
@@ -150,5 +164,6 @@ def retrieve_and_validate_iosxe_interface(
 
     return validate_iosxe_oper_status(
         root,
-        interface_name
-    )
+        interface_name,
+        expected_status
+)

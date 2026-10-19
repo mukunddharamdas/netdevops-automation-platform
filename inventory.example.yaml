@@ -1,0 +1,10 @@
+devices:
+  - hostname: LAB-R1
+    host: 192.0.2.10
+    port: 830
+    vendor: cisco
+    interfaces:
+      - name: GigabitEthernet1
+        expected_status: up
+      - name: GigabitEthernet2
+        expected_status: down
