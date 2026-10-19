@@ -178,13 +178,14 @@ def test_iosxe_oper_status_ready():
 
     result, reason = validate_iosxe_oper_status(
         root,
-        "GigabitEthernet1"
+        "GigabitEthernet1",
+        "up"
     )
 
     assert result is True
-    assert reason == "operational status is up"
+    assert reason == "operational status is up, expected up"
 
-def test_iosxe_oper_status_not_ready():
+def test_iosxe_oper_status_down_matches_expected_down():
     xml_data = """
     <rpc-reply xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
         <data>
@@ -203,9 +204,57 @@ def test_iosxe_oper_status_not_ready():
 
     result, reason = validate_iosxe_oper_status(
         root,
-        "GigabitEthernet2"
+        "GigabitEthernet2",
+        "down"
+    )
+
+    assert result is True
+    assert reason == "operational status is down, expected down"
+
+def test_iosxe_unknown_oper_status_raises_error():
+    xml_data = """
+    <rpc-reply xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+        <data>
+            <interfaces xmlns="http://cisco.com/ns/yang/Cisco-IOS-XE-interfaces-oper">
+                <interface>
+                    <name>GigabitEthernet3</name>
+                    <oper-status>if-oper-state-unknown</oper-status>
+                </interface>
+            </interfaces>
+        </data>
+    </rpc-reply>
+    """
+
+    root = parse_netconf_xml(xml_data)
+
+    with pytest.raises(ValueError):
+        validate_iosxe_oper_status(
+            root,
+            "GigabitEthernet3",
+            "down"
+        )
+
+def test_iosxe_oper_status_down_mismatches_expected_up():
+    xml_data = """
+    <rpc-reply xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+        <data>
+            <interfaces xmlns="http://cisco.com/ns/yang/Cisco-IOS-XE-interfaces-oper">
+                <interface>
+                    <name>GigabitEthernet2</name>
+                    <oper-status>if-oper-state-no-pass</oper-status>
+                </interface>
+            </interfaces>
+        </data>
+    </rpc-reply>
+    """
+
+    root = parse_netconf_xml(xml_data)
+
+    result, reason = validate_iosxe_oper_status(
+        root,
+        "GigabitEthernet2",
+        "up"
     )
 
     assert result is False
-    assert reason == "operational status is if-oper-state-no-pass"
-    
+    assert reason == "operational status is down, expected up"

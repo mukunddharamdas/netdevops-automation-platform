@@ -1,5 +1,21 @@
+# Python virtual environment
 .venv/
+
+# Python cache
 __pycache__/
 .pytest_cache/
 *.pyc
+
+# Local environment variables and secrets
 .env
+.env.*
+!.env.example
+
+# Local generated configurations
+generated/
+
+# macOS files
+.DS_Store
+
+# Local lab inventory
+inventory.yaml
