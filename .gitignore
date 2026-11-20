@@ -19,3 +19,7 @@ generated/
 
 # Local lab inventory
 inventory.yaml
+
+/ansible/inventory.yml
+
+/reports/

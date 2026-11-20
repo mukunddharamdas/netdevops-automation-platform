@@ -1,0 +1,10 @@
+---
+- name: First Ansible automation test
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Display a message
+      ansible.builtin.debug:
+        msg: "Ansible is running successfully on my MacBook"

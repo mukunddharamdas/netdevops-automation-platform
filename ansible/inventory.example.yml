@@ -1,0 +1,6 @@
+all:
+  children:
+    cisco_routers:
+      hosts:
+        LAB-R1:
+          ansible_host: 192.0.2.10
