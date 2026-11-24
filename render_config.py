@@ -1,4 +1,7 @@
+
+import argparse
 import yaml
+
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from config_validation import validate_ip_address
@@ -30,8 +33,37 @@ def generate_configuration(data):
 
 
 if __name__ == "__main__":
-    with open("config_data.yaml", "r") as file:
-        data = yaml.safe_load(file)
 
-    rendered_config = generate_configuration(data)
-    print(rendered_config)
+    parser = argparse.ArgumentParser(
+        description="Generate validated network configuration"
+    )
+
+    parser.add_argument(
+        "--show-config",
+        action="store_true",
+        help="Display the generated configuration"
+    )
+
+    args = parser.parse_args()
+
+    try:
+        with open("config_data.yaml", "r") as file:
+            data = yaml.safe_load(file)
+
+        rendered_config = generate_configuration(data)
+
+        print("Configuration generated successfully")
+        print(f"Configuration size: {len(rendered_config)} characters")
+
+        if args.show_config:
+            print("\n===== GENERATED CONFIGURATION =====")
+            print(rendered_config)
+
+    except Exception as error:
+        print(
+            f"ERROR - Configuration generation failed: "
+            f"{type(error).__name__}"
+        )
+        raise SystemExit(1)
+
+    raise SystemExit(0)

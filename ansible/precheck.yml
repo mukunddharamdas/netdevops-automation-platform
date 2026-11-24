@@ -1,3 +1,4 @@
+
 ---
 - name: Cisco router pre-change health check
   hosts: cisco_routers
@@ -10,17 +11,27 @@
           - show version
           - show ip interface brief
       register: precheck_results
+      no_log: true
 
-    - name: Display collected information
+    - name: Display collection summary
       ansible.builtin.debug:
-        var: precheck_results.stdout_lines
+        msg: "Operational information collected successfully for {{ inventory_hostname }}"
+
+    - name: Create local reports directory
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/../reports"
+        state: directory
+        mode: "0700"
+      delegate_to: localhost
+      run_once: true
 
     - name: Save pre-change baseline locally
       ansible.builtin.copy:
         content: "{{ precheck_results.stdout | join('\n\n') }}\n"
-        dest: "{{ playbook_dir }}/../reports/precheck_LAB-R1.txt"
+        dest: "{{ playbook_dir }}/../reports/precheck_{{ inventory_hostname }}.txt"
         mode: "0600"
       delegate_to: localhost
+      no_log: true
 
     - name: Validate critical interface states
       ansible.builtin.assert:
@@ -30,8 +41,9 @@
               precheck_results.stdout_lines[1]
               | select('match', '^GigabitEthernet1\s+')
               | select('search', '\s+up\s+up\s*$')
-            | list | length
+              | list | length
             ) == 1
+
           - >-
             (
               precheck_results.stdout_lines[1]
@@ -39,5 +51,6 @@
               | select('search', '\s+administratively down\s+down\s*$')
               | list | length
             ) == 1
+
         success_msg: "PRE-CHECK PASSED: Critical interfaces match expected states"
         fail_msg: "DEPLOYMENT BLOCKED: Critical interface state mismatch"

@@ -7,5 +7,5 @@ device = {
     "password": "example-only",
 }
 
-print(device)
-print(device["host"])
+print(f"Device type: {device['device_type']}")
+print(f"Device host: {device['host']}")
