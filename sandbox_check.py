@@ -1,3 +1,4 @@
+
 from netmiko import (
     ConnectHandler,
     NetmikoTimeoutException,
@@ -9,24 +10,33 @@ from network_validation import (
     validate_interface
 )
 
+
 # Get credentials securely at runtime
 username = input("Enter the username: ")
 password = getpass("Enter the password: ")
+
 
 # Cisco DevNet sandbox device
 device = {
     "device_type": "cisco_ios",
     "host": "devnetsandboxiosxec9k.cisco.com",
     "username": username,
-    "password": password
+    "password": password,
+    "ssh_strict": True,
+    "system_host_keys": True,
 }
 
-# No connection exists yet
+
+# Initialize connection and validation state
 connection = None
+all_checks_passed = False
+failures = []
+
 
 try:
-    # Connect
+    # Establish connection
     connection = ConnectHandler(**device)
+    print("Device connection successful")
 
     # Collect and parse device state
     output = connection.send_command(
@@ -34,7 +44,7 @@ try:
         use_textfsm=True
     )
 
-    # Verify parsed data BEFORE trusting it
+    # Verify parsed data before trusting it
     validate_parsed_output(output)
 
     # Define expected network state
@@ -45,7 +55,6 @@ try:
     ]
 
     all_checks_passed = True
-    failures = []
 
     # Validate required interfaces
     for interface_name in required_interfaces:
@@ -57,7 +66,7 @@ try:
 
         print(f"{interface_name}: {result} - {reason}")
 
-        if result == False:
+        if not result:
             all_checks_passed = False
 
             failures.append({
@@ -65,53 +74,66 @@ try:
                 "reason": reason
             })
 
-    # Summary
-    print()
-    print("===== PRE-CHECK SUMMARY =====")
-
-    if all_checks_passed:
-        print("Overall Result: PASSED")
-    else:
-        print("Overall Result: FAILED")
-
-    print(f"Total Failures: {len(failures)}")
-
-    if len(failures) > 0:
-        print()
-        print("Failed Checks:")
-
-        for failure in failures:
-            print(
-                f"{failure['interface']} - "
-                f"{failure['reason']}"
-            )
-
-    if all_checks_passed:
-        print()
-        print("DEPLOYMENT ALLOWED")
-    else:
-        print()
-        print("DEPLOYMENT BLOCKED")
 
 except NetmikoAuthenticationException:
-    print()
-    print("===== PRE-CHECK ERROR =====")
     print("ERROR - Authentication failed")
-    print("DEPLOYMENT BLOCKED")
+    all_checks_passed = False
+
 
 except NetmikoTimeoutException:
-    print()
-    print("===== PRE-CHECK ERROR =====")
     print("ERROR - Connection timed out")
-    print("DEPLOYMENT BLOCKED")
+    all_checks_passed = False
+
 
 except Exception as error:
-    print()
-    print("===== PRE-CHECK ERROR =====")
-    print(f"ERROR - Unexpected error: {error}")
-    print("DEPLOYMENT BLOCKED")
+    print(
+        f"ERROR - Unexpected error: "
+        f"{type(error).__name__}"
+    )
+    all_checks_passed = False
 
 
 finally:
     if connection is not None:
-        connection.disconnect()
+        try:
+            connection.disconnect()
+            print("Device connection closed")
+
+        except Exception as cleanup_error:
+            print(
+                f"ERROR - Connection cleanup failed: "
+                f"{type(cleanup_error).__name__}"
+            )
+            all_checks_passed = False
+
+
+# Final summary after connection cleanup
+print("\n===== PRE-CHECK SUMMARY =====")
+
+if all_checks_passed:
+    print("Overall Result: PASSED")
+else:
+    print("Overall Result: FAILED")
+
+print(f"Failed interface checks: {len(failures)}")
+
+
+if failures:
+    print("\nFailed Checks:")
+
+    for failure in failures:
+        print(
+            f"{failure['interface']} - "
+            f"{failure['reason']}"
+        )
+
+
+# Final deployment gate
+print("\n===== DEPLOYMENT GATE =====")
+
+if all_checks_passed:
+    print("DEPLOYMENT ALLOWED")
+    raise SystemExit(0)
+else:
+    print("DEPLOYMENT BLOCKED")
+    raise SystemExit(1)

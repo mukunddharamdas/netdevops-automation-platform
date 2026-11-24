@@ -20,9 +20,10 @@ response = requests.get(
     headers=headers,
     auth=(username, password),
     timeout=10,
-    verify=False
+    verify=True  # Enable TLS certificate verification
 )
 
 print(f"Status code: {response.status_code}")
 response.raise_for_status()
-print(response.text)
+print("Operational data retrieved successfully")
+print(f"Response size: {len(response.content)} bytes")
